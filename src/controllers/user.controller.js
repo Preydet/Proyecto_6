@@ -32,6 +32,7 @@ exports.login = async (req, res) => {
         const payload = { 
             user: {
                 id: foundUser._id,
+                role: foundUser.role
             }
         }
         jwt.sign(
@@ -79,7 +80,7 @@ exports.updateUserById = async (req, res) => {
 exports.deleteUserById = async (req, res) => {
     try {
         const deletedUser = await User.findByIdAndDelete(req.user.id);
-        if (!deletedUser) return res.status(400).json({ message: 'Usuario no encontrado' });
+        if (!deletedUser) return res.status(404).json({ message: 'Usuario no encontrado' });
         return res.status(200).json({ message: 'Usuario eliminado correctamente' });
     } catch (error) {
         res.status(500).json({ message: 'Hubo un error al eliminar el usuario', error })  
