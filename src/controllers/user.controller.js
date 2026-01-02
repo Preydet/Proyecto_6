@@ -4,14 +4,41 @@ const bcryptjs = require('bcryptjs');
 
 exports.createUser = async (req, res) => { const { username, email, password, role } = req.body;
     try {
+        //Validar que el email tenga formato correcto
+
+        const emailRegex = /^\S+@\S+\.\S+$/;
+        if (!emailRegex.test(email)) {
+            return res.status(400).json({ message: 'El email no tiene un formato válido' });
+        }
+        //Verificar si el usuario ya existe
+
         let foundUser = await User.findOne({ email });
         if (foundUser) {
             return res.status(400).json({ message: 'El usuario ya existe en el sistema' });
         }
+        //Determinar rol
+        let finalRole = 'user';
+        if (role === 'admin') {
+            const anyAdminExists = await User.exists({ role: 'admin' });
+            if (!anyAdminExists) {
+                finalRole = 'admin';
+            } else {
+                if (!req.user || req.user.role !== 'admin') {
+                    return res.status(403).json({ message: 'Solo un administrador puede crear otro administrador' });
+                }
+                finalRole = 'admin';
+            }
+        }      
+            
+        
+        //Hashear la contraseña
+
         const salt = await bcryptjs.genSalt(10);
         const hashedPassword = await bcryptjs.hash(password, salt);
+
+        //Crear el usuario
         
-        const newUser = await User.create({ username, email, password: hashedPassword, role });
+        const newUser = await User.create({ username, email, password: hashedPassword, role: finalRole });
         if (!newUser) return res.status(400).json({ message: 'No se pudo crear el usuario' });
         return res.status(201).json({ datos: newUser });
     } catch (error) {
