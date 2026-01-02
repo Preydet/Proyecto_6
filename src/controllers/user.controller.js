@@ -2,7 +2,7 @@ const User = require ('../models/User');
 const jwt = require('jsonwebtoken');
 const bcryptjs = require('bcryptjs');
 
-exports.createUser = async (req, res) => { const { username, email, password } = req.body;
+exports.createUser = async (req, res) => { const { username, email, password, role } = req.body;
     try {
         let foundUser = await User.findOne({ email });
         if (foundUser) {
@@ -11,7 +11,7 @@ exports.createUser = async (req, res) => { const { username, email, password } =
         const salt = await bcryptjs.genSalt(10);
         const hashedPassword = await bcryptjs.hash(password, salt);
         
-        const newUser = await User.create({ username, email, password: hashedPassword });
+        const newUser = await User.create({ username, email, password: hashedPassword, role });
         if (!newUser) return res.status(400).json({ message: 'No se pudo crear el usuario' });
         return res.status(201).json({ datos: newUser });
     } catch (error) {
@@ -65,15 +65,33 @@ exports.verifyUser = async (req, res) => {
 exports.updateUserById = async (req, res) => {
     try {
         const { username, email, password } = req.body;
+
+        //Si el usuarrio no es administrador, solo puede editarse a sí mismo
+        if (req.user.role !== 'admin' && req.user.id !== req.params.id) {
+            return res.status(403).json({ message: 'Acceso denegado: no puedes editar otros usuarios' });
+        }
+        let hashedPassword;
+        if (password) {            
         const salt = await bcryptjs.genSalt(10);
-        const hashedPassword = await bcryptjs.hash(password, salt);
+        hashedPassword = await bcryptjs.hash(password, salt);
+        }
+
+        const updateData = { 
+            username,
+            email,
+            ...(password && { password: hashedPassword })
+        };
+        
         const updateUser = await User.findByIdAndUpdate(
-            req.user.id,
-            { username, email, password: hashedPassword },
+            req.params.id,
+            updateData,
             { new: true, runValidators: true }
         )
-        if (!updateUser) return res.status(400).json({ message: 'Usuario no encontrado' });
+
+        if (!updateUser) return res.status(404).json({ message: 'Usuario no encontrado' });
+
         return res.status(200).json({ usuarioActualizado: updateUser });
+
     } catch (error) {
         res.status(500).json({ message: 'Hubo un error al actualizar el usuario', error })  
     }
@@ -81,7 +99,14 @@ exports.updateUserById = async (req, res) => {
 
 exports.deleteUserById = async (req, res) => {
     try {
-        const deletedUser = await User.findByIdAndDelete(req.user.id);
+        // Solo admin puede borrar a otros usuarios
+        if (req.user.role !== 'admin') {
+            //Pero el usuario puede borrarse a sí mismo
+            if (req.user.id !== req.params.id) {
+                return res.status(403).json({ message: 'Acceso denegado: no puedes eliminar otros usuarios' });
+            }
+        }
+        const deletedUser = await User.findByIdAndDelete(req.params.id);
         if (!deletedUser) return res.status(404).json({ message: 'Usuario no encontrado' });
         return res.status(200).json({ message: 'Usuario eliminado correctamente' });
     } catch (error) {
