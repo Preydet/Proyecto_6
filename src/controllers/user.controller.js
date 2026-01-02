@@ -22,7 +22,7 @@ exports.createUser = async (req, res) => { const { username, email, password } =
 exports.login = async (req, res) => {
     const { email, password } = req.body;
     try {
-        let foundUser = await User.findOne({ email });
+        let foundUser = await User.findOne({ email: email.toLowerCase() });
         if (!foundUser)  return res.status(400).json({ message: 'El usuario no existe en el sistema' });
 
         const correctPassword = await bcryptjs.compare(password, foundUser.password);
@@ -42,8 +42,10 @@ exports.login = async (req, res) => {
                 expiresIn: '1h'
             },
             (error, token) => {
-                if (error) throw error;
-                res.json({ token });
+                if (error) {
+                    return res.status(500).json({ message: 'Hubo un error al generar el token', error: error.message });
+                }
+            return res.json({ token });
             }
         );
     } catch (error) {
