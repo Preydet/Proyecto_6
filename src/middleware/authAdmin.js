@@ -1,6 +1,6 @@
 const jwt = require('jsonwebtoken');
 
-module.exports = (req, res, next) => {
+module.exports = function (req, res, next) {
     const token = req.header('Authorization')?.replace('Bearer ', '');
     if (!token) return next(); // Sin token seguimos (para crear primer admin)
     
@@ -9,6 +9,7 @@ module.exports = (req, res, next) => {
         req.user = decoded.user; // Si hay token válido, añadimos req.user
 
     } catch (err) {
+        res.status(401).json({ message: 'Acceso no autorizado' });
 
     }
 
