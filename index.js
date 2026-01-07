@@ -1,4 +1,5 @@
 require("dotenv").config();
+const cors = require("cors");
 const express = require("express");
 const connectDB = require("./src/config/db");
 const userRouter = require("./src/routes/user.routes");
@@ -8,7 +9,26 @@ const app = express();
 
 connectDB();
 
+const whitelist = [
+    'http://localhost:3000',
+];
+
+const corsOptions = {
+    origin: function (origin, callback) {
+        if (!origin) return callback(null, true);
+        if (whitelist.includes(origin)) {
+            callback()
+        } else {
+            callback(new Error('Not allowed by CORS'))
+        }
+    },
+    methods: ['GET', 'POST', 'PUT', 'DELETE'],
+    credentials: true,
+};
+
+
 //middlewares
+app.use(cors(corsOptions));
 app.use(express.json());
 
 app.use("/users", userRouter);
