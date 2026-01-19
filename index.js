@@ -31,6 +31,10 @@ const corsOptions = {
 app.use(cors(corsOptions));
 app.use(express.json());
 
+app.get('/', (req, res) => {
+    return res.status(200).json({ message: 'ok'});
+});
+
 app.use("/users", userRouter);
 
 app.use("/products", productRouter);
