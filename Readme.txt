@@ -48,7 +48,7 @@ src/
     product.routes.js   -> Endpoints de productos
 
 index.js                -> Archivo de entrada del servidor
-.env                    -> Variables de entorno (NO subir al repositorio)
+.env                    -> Variables de entorno 
 .gitignore              -> Archivos ignorados
 package.json            -> Dependencias y scripts
 
